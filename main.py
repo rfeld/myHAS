@@ -5,8 +5,13 @@ import string
 import librato
 import socket
 
+secretfile = open("secrets.txt",'r')
+secrets = secretfile.readline().rstrip().split(';');
+
 # Include your credentials here
-api = librato.connect("Username", "token")
+api = librato.connect(secrets[0], secrets[1])
+
+print secrets
 
 def handleHumTemp(items):
 	sensor_id   = items[2]
