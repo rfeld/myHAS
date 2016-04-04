@@ -13,6 +13,21 @@ api = librato.connect(secrets[0], secrets[1])
 
 print secrets
 
+def submitHumTempToPlotly(sensorId, hum, temp):
+		try:
+			api.submit(sensorId + "_relf", hum)
+
+			#api.submit("relativeLuftfeuchtigkeit", humidity)
+		except:
+			print "Sensor " + sensorId + " Error in Hum " + hum 
+		
+		try:
+			api.submit(sensorId + "_temp", temp)
+			#api.submit("Mondfeuchtigkeit", temp)
+		except:
+			print "Sensor " + sensorId + "Error in temp " + temp
+
+
 def handleHumTemp(items):
 	sensor_id   = items[2]
 	humidity    = float(items[3]) / 10
@@ -22,6 +37,7 @@ def handleHumTemp(items):
 	print "Rel LF     = ", humidity
 	print "Temperatur = ", temperature
 
+	submitHumTempToPlotly(sensor_id,humidity, temperature)
 
 # Takes Message and verifies it is a known type. 
 # If everything is ok a sub handler is called and "OK" returned. 
@@ -68,24 +84,6 @@ while 1:
 	
 	values = line.split(";")
 	print values
-
-	# Rough check if useful values were read
-	if line[0] != 'M' and len(values) == 3 :
-		try:
-			humidity = float(values[1])
-			print "Humidity = " 
-			print humidity
-			api.submit("relativeLuftfeuchtigkeit", humidity)
-		except:
-			print "Error in " + line
-		
-		try:
-			temperature = float(values[2])
-			print "Temperature = "
-			print temperature
-			api.submit("Temperatur", temperature)
-		except:
-			print "Error in " + line
 
 #ser.close()
 
