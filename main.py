@@ -4,6 +4,7 @@ import serial
 import string
 import librato
 import socket
+import datetime
 
 secretfile = open("secrets.txt",'r')
 secrets = secretfile.readline().rstrip().split(';');
@@ -11,22 +12,27 @@ secrets = secretfile.readline().rstrip().split(';');
 # Include your credentials here
 api = librato.connect(secrets[0], secrets[1])
 
-print secrets
+print "Secrets: ", secrets
 
 def submitHumTempToPlotly(sensorId, hum, temp):
+		retstring = "Sucessfully transmitted Hum and Temp of " + sensorId
+
 		try:
 			api.submit(sensorId + "_relf", hum)
 
 			#api.submit("relativeLuftfeuchtigkeit", humidity)
 		except:
-			print "Sensor " + sensorId + " Error in Hum " + hum 
+			print "Sensor " + sensorId + " Error in Hum " + str(hum) 
+			retstring = "Error transmitting Humidity of " + sensorId
 		
 		try:
 			api.submit(sensorId + "_temp", temp)
 			#api.submit("Mondfeuchtigkeit", temp)
 		except:
-			print "Sensor " + sensorId + "Error in temp " + temp
+			print "Sensor " + sensorId + "Error in temp " + str(temp)
+			retstring = "Error transmitting Temperature of " + sensorId
 
+		return retstring
 
 def handleHumTemp(items):
 	sensor_id   = items[2]
@@ -37,7 +43,7 @@ def handleHumTemp(items):
 	print "Rel LF     = ", humidity
 	print "Temperatur = ", temperature
 
-	submitHumTempToPlotly(sensor_id,humidity, temperature)
+	return submitHumTempToPlotly(sensor_id,humidity, temperature)
 
 # Takes Message and verifies it is a known type. 
 # If everything is ok a sub handler is called and "OK" returned. 
@@ -53,10 +59,12 @@ def handleMessage(message):
               	return "Error: Start or End Symbols incorrect/missing!"
 
 	if items[1] == "HumTemp":
-		handleHumTemp(items)
+		return handleHumTemp(items)
 	else:
 		return "Error: Unknown Message Type"
 
+# Create datetime object to obtain current timestamp
+t=datetime.datetime.now()
 
 # Open Socket to listen for incoming Messages
 #create an INET, STREAMing socket
@@ -70,7 +78,7 @@ while 1:
 	#accept connections from outside
 	(clientsocket, address) = serversocket.accept()
 	
-	print "Incoming Connection"
+	print str(t.now()), " Incoming Connection"
 	
 	line = clientsocket.recv(1024)
 	clientsocket.close()
