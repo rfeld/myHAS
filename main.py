@@ -5,6 +5,10 @@ import string
 import librato
 import socket
 import datetime
+import signal
+import sys
+import time
+
 
 secretfile = open("secrets.txt",'r')
 secrets = secretfile.readline().rstrip().split(';');
@@ -45,6 +49,13 @@ def handleHumTemp(items):
 
 	return submitHumTempToPlotly(sensor_id,humidity, temperature)
 
+# Handles incoming Log Messages
+# Expected format: 
+# *MyHomeProto;LogMessage;<Sender/Source>;<Priority:HIGH|MEDIUM|LOW>;<Message>;END#
+def handleLogMessage(items):
+	return "(" + items[3] + ") "+ items[2]+": " + items[4] 
+
+
 # Takes Message and verifies it is a known type. 
 # If everything is ok a sub handler is called and "OK" returned. 
 # In Case of en error it returns "Error"
@@ -60,6 +71,8 @@ def handleMessage(message):
 
 	if items[1] == "HumTemp":
 		return handleHumTemp(items)
+	elif items[1] == "LogMessage":
+		return handleLogMessage(items)
 	else:
 		return "Error: Unknown Message Type"
 
@@ -71,8 +84,24 @@ t=datetime.datetime.now()
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Bind to Port 12000
-serversocket.bind((socket.gethostname(), 12000))
+while True:
+	try:
+		serversocket.bind((socket.gethostname(), 12000))
+		break
+	except:
+		print("Socket not available, yet. Retry in 2s...")
+		time.sleep(2)
+
 serversocket.listen(5)
+
+# Make sure the connection is closed properly when interrupted with Ctrl-C
+def signal_handler(signal, frame):
+	print("Abbruch durch Ctrl-c!")
+	serversocket.shutdown(2)
+	serversocket.close()
+	sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 while 1:
 	#accept connections from outside
@@ -88,10 +117,7 @@ while 1:
 	# High Level Message Handler
 	print handleMessage(line)
 
-	#line=ser.readline().rstrip()
-	
 	values = line.split(";")
 	print values
 
-#ser.close()
 
