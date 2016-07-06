@@ -8,15 +8,18 @@ import datetime
 import signal
 import sys
 import time
+import os
 
-
-secretfile = open("secrets.txt",'r')
+secretfilename = os.path.dirname(os.path.realpath(__file__)) + "/secrets.txt"
+secretfile = open(secretfilename, 'r')
 secrets = secretfile.readline().rstrip().split(';');
 
 # Include your credentials here
 api = librato.connect(secrets[0], secrets[1])
 
 print "Secrets: ", secrets
+
+sys.stdout.flush()
 
 def submitHumTempToPlotly(sensorId, hum, temp):
 		retstring = "Sucessfully transmitted Hum and Temp of " + sensorId
@@ -83,6 +86,15 @@ t=datetime.datetime.now()
 #create an INET, STREAMing socket
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+# Make sure the connection is closed properly when interrupted with Ctrl-C
+def signal_handler(signal, frame):
+	print("Abbruch durch Ctrl-c!")
+	serversocket.shutdown(2)
+	serversocket.close()
+	sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
 # Bind to Port 12000
 while True:
 	try:
@@ -94,30 +106,32 @@ while True:
 
 serversocket.listen(5)
 
-# Make sure the connection is closed properly when interrupted with Ctrl-C
-def signal_handler(signal, frame):
-	print("Abbruch durch Ctrl-c!")
-	serversocket.shutdown(2)
-	serversocket.close()
-	sys.exit(0)
-
-signal.signal(signal.SIGINT, signal_handler)
-
 while 1:
+	# Make sure all Output from last iteration is on screen
+	sys.stdout.flush()
+	
 	#accept connections from outside
 	(clientsocket, address) = serversocket.accept()
 	
 	print str(t.now()), " Incoming Connection"
 	
-	line = clientsocket.recv(1024)
+	# Set timeout to avoid blocking in case of error
+	clientsocket.settimeout(1)
+
+	try:	
+		line = clientsocket.recv(1024)
+	except:
+		print(">>> Reading from socket triggered exception!")
+		print "Unexpected error:", sys.exc_info()[0]
+
 	clientsocket.close()
 
-	print "Text received: " + line 
+	#print "Text received: " + line 
 	
 	# High Level Message Handler
 	print handleMessage(line)
 
-	values = line.split(";")
-	print values
+	#values = line.split(";")
+	#print values
 
 
