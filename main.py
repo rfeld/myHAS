@@ -9,6 +9,7 @@ import signal
 import sys
 import time
 import os
+import httplib, urllib
 
 secretfilename = os.path.dirname(os.path.realpath(__file__)) + "/secrets.txt"
 secretfile = open(secretfilename, 'r')
@@ -17,9 +18,23 @@ secrets = secretfile.readline().rstrip().split(';');
 # Include your credentials here
 api = librato.connect(secrets[0], secrets[1])
 
+pushoverAppToken = secrets[2]
+pushoverUserKey = secrets[3]
+
 print "Secrets: ", secrets
 
 sys.stdout.flush()
+
+def sendPushoverAlert( message ):
+	conn = httplib.HTTPSConnection("api.pushover.net:443")
+	conn.request("POST", "/1/messages.json",
+  		urllib.urlencode({
+    		"token": pushoverAppToken,
+    		"user": pushoverUserKey,
+    		"message": message,
+  	}), { "Content-type": "application/x-www-form-urlencoded" })
+	conn.getresponse()
+
 
 def submitHumTempToPlotly(sensorId, hum, temp):
 		retstring = "Sucessfully transmitted Hum and Temp of " + sensorId
@@ -56,12 +71,15 @@ def handleHumTemp(items):
 # Expected format: 
 # *MyHomeProto;LogMessage;<Sender/Source>;<Priority:HIGH|MEDIUM|LOW>;<Message>;END#
 def handleLogMessage(items):
-	return "(" + items[3] + ") "+ items[2]+": " + items[4] 
+	logmessage = "(" + items[3] + ") "+ items[2]+": " + items[4] 
+	sendPushoverAlert(logmessage) 
+	return logmessage
 
 
 # Takes Message and verifies it is a known type. 
-# If everything is ok a sub handler is called and "OK" returned. 
-# In Case of en error it returns "Error"
+# If everything is ok a sub handler is called and its output
+# (=the content of the packet as string) returned. 
+# In Case of en error it returns an Error message is returned
 def handleMessage(message):
 	items = message.split(";")
 	
@@ -105,6 +123,9 @@ while True:
 		time.sleep(2)
 
 serversocket.listen(5)
+
+# Give indication of program start
+sendPushoverAlert("myHAS wurde gestartet!")
 
 while 1:
 	# Make sure all Output from last iteration is on screen
