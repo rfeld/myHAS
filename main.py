@@ -72,7 +72,9 @@ def handleHumTemp(items):
 # *MyHomeProto;LogMessage;<Sender/Source>;<Priority:HIGH|MEDIUM|LOW>;<Message>;END#
 def handleLogMessage(items):
 	logmessage = "(" + items[3] + ") "+ items[2]+": " + items[4] 
-	sendPushoverAlert(logmessage) 
+	if items[3] == "HIGH":
+		sendPushoverAlert(logmessage) 
+	
 	return logmessage
 
 
