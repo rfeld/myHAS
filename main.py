@@ -32,6 +32,7 @@ def sendPushoverAlert( message ):
     		"token": pushoverAppToken,
     		"user": pushoverUserKey,
     		"message": message,
+		"priority": 1
   	}), { "Content-type": "application/x-www-form-urlencoded" })
 	conn.getresponse()
 
@@ -77,6 +78,12 @@ def handleLogMessage(items):
 	
 	return logmessage
 
+def handleDingDong(items):
+	t=datetime.datetime.now()
+	message = "{0} - {1}".format(t, items[2])
+	sendPushoverAlert(message)
+	return message
+
 
 # Takes Message and verifies it is a known type. 
 # If everything is ok a sub handler is called and its output
@@ -96,6 +103,8 @@ def handleMessage(message):
 		return handleHumTemp(items)
 	elif items[1] == "LogMessage":
 		return handleLogMessage(items)
+	elif items[1] == "DingDong":
+		return handleDingDong(items)
 	else:
 		return "Error: Unknown Message Type"
 
@@ -149,7 +158,7 @@ while 1:
 
 	clientsocket.close()
 
-	#print "Text received: " + line 
+	print "Text received: " + line 
 	
 	# High Level Message Handler
 	print handleMessage(line)
