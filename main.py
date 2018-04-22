@@ -57,6 +57,18 @@ def submitHumTempToPlotly(sensorId, hum, temp):
 
 		return retstring
 
+def submitVoltageToPlotly(sensorId, voltage):
+		retstring = "Sucessfully transmitted voltage of " + sensorId
+
+		try:
+			api.submit(sensorId + "_v", voltage)
+
+		except:
+			print "Sensor " + sensorId + " Error in Voltage " + str(voltage) 
+			retstring = "Error transmitting Voltage of " + sensorId
+		
+		return retstring
+
 def handleHumTemp(items):
 	sensor_id   = items[2]
 	humidity    = float(items[3]) / 10
@@ -67,6 +79,12 @@ def handleHumTemp(items):
 	print "Temperatur = ", temperature
 
 	return submitHumTempToPlotly(sensor_id,humidity, temperature)
+
+def handleVoltage(items):
+	sensor_id  = items[2]
+	voltage    = float(items[3])
+	print "Received Voltage: " + str(voltage) + " from " + sensor_id
+	return submitVoltageToPlotly(sensor_id, voltage)
 
 # Handles incoming Log Messages
 # Expected format: 
@@ -105,6 +123,8 @@ def handleMessage(message):
 		return handleLogMessage(items)
 	elif items[1] == "DingDong":
 		return handleDingDong(items)
+	elif items[1] == "Voltage":
+		return handleVoltage(items)
 	else:
 		return "Error: Unknown Message Type"
 
