@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import serial
 import string
 import librato
 import socket
