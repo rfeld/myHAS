@@ -23,6 +23,8 @@ pushoverUserKey = secrets[3]
 
 print "Secrets: ", secrets
 
+print "Api: ", api
+
 sys.stdout.flush()
 
 def sendPushoverAlert( message ):
@@ -156,6 +158,7 @@ while True:
 serversocket.listen(5)
 
 # Give indication of program start
+print "Waiting for incoming connections in port 12000"
 sendPushoverAlert("myHAS wurde gestartet!")
 
 while 1:
